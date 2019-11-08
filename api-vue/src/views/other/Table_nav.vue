@@ -79,6 +79,7 @@
                     console.log(err);
                 })
             },
+
             onDelete(key) {
                     let data ={
                         'id':key,
@@ -87,7 +88,7 @@
                        if(res.data.status){
                            this.$message.success(res.data.msg, 3);
                            const dataSource = [...this.data];
-                           this.data = dataSource.filter(item => item.key !== key);
+                           this.data = dataSource.filter(item => item.id !== key);
                        }else{
                            this.$message.error(res.data.msg, 3);
                        }

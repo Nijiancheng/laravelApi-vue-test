@@ -112,9 +112,18 @@
                 let data ={
                     'id':key,
                 }
-                this.axios.post(api.ProductDel,qs.stringify(data)).then(response=>{
-                    console.log(response);
+                this.axios.post(api.ProductDel,qs.stringify(data)).then(res=>{
+                    console.log(res);
+                    if(res.data.status){
+                        // this.$router.go(0);
+                        const dataSource = [...this.data];
+                        this.data = dataSource.filter(item => item.id !== key);
+                        this.$message.success('删除成功',2);
+                    }else{
+                        this.$message.error(res.data.msg,2);
+                    }
                 }).catch(err=>{
+
                     console.log(err);
                 })
             },
