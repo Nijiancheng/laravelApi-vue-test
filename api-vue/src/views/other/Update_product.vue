@@ -364,7 +364,6 @@
                         })
                         this.cacheData = this.data.map(item => ({...item}));
                         this.cacheDataSource = this.dataSource.map(item => ({...item}));
-
 1                    }
                 }).catch(err => {
                     console.log(err);
