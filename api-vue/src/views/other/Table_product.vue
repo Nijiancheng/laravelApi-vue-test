@@ -1,17 +1,24 @@
 <template>
 <div>
     <a-table :dataSource="data" rowKey="id"  :pagination="false">
-        <a-table-column title="id" dataIndex="id"  />
-        <a-table-column title="分类id" dataIndex="category_id"  />
-        <a-table-column title="商品名" dataIndex="name"  />
-        <a-table-column title="销量" dataIndex="sale_num"  />
-        <!--    <a-table-column title="商品描述" dataIndex="content" -->
-        <a-table-column title="排序" dataIndex="sort"  />
-        <a-table-column title="状态" dataIndex="status" />
-        <a-table-column title="创建时间" dataIndex="created_at"  />
-        <a-table-column title="更新时间" dataIndex="updated_at"  />
+        <a-table-column title="id" data-index="id"  />
+        <a-table-column title="分类id" data-index="category_id"  >
+            <template slot-scope="text, record, index">
+                {{cate[text].name}}
+            </template>
+        </a-table-column>
+        <a-table-column title="商品名" data-index="name"  />
+        <a-table-column title="销量" data-index="sale_num"  />
+        <a-table-column title="排序" data-index="sort"  />
+        <a-table-column title="状态" data-index="status" >
+            <template slot-scope="text, record, index">
+                {{status[text-1]}}
+            </template>
+        </a-table-column>
+        <a-table-column title="创建时间" data-index="created_at"  />
+        <a-table-column title="更新时间" data-index="updated_at"  />
 
-        <a-table-column title="操作"  dataindex="action">
+        <a-table-column title="操作"  data-index="action">
             <template slot-scope="text, record, index">
         <span>
           <a-button type="primary"  @click="edit(record.id)">编辑</a-button>
@@ -36,6 +43,7 @@
         data() {
             return {
                 data:[],
+                cate:[],
                 status,
                 page:1,
                 pageSize:2,
@@ -43,6 +51,30 @@
             };
         },
         methods: {
+            getCate(){
+                return new Promise((resolve, reject) => {
+                    this.axios.get(api.CateGet).then(res => {
+                        // console.log(res.data.data ,'分类信息');
+                        if (res.data.status) {
+                            res.data.data.data.forEach((val, key) => {
+                                let json = JSON.parse(val.property);
+                                resolve(
+                                    this.cate[val.id] =
+                                        {
+                                            id: val.id,
+                                            name: val.name,
+                                            attr: json,
+                                        }
+                                )
+                            })
+                            console.log(this.cate);
+                        }
+
+                    }).catch(err => {
+                        reject(console.log(err));
+                    })
+                })
+            },
             getInfo(page,pageSize){
                 // console.log(api.GetProduct);
                 this.axios
@@ -64,7 +96,7 @@
                                     sale_num: val.sale_num,
                                     // content: val.content,
                                     sort: val.sort,
-                                    status: this.status[val.status-1],
+                                    status: val.status,
                                     created_at: val.created_at,
                                     updated_at: val.updated_at
                                 },
@@ -100,7 +132,9 @@
             },
         },
         created() {
-            this.getInfo(this.page,this.pageSize);
+            this.getCate().then(
+                this.getInfo(this.page,this.pageSize),
+            );
         }
     };
 </script>

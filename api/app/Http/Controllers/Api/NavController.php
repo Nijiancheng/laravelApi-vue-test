@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Model\Nav;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
+
 class NavController extends Controller
 {
 //    获取导航信息
@@ -53,6 +56,14 @@ class NavController extends Controller
        }elseif($request->isMethod('post')){
            $arr = $request->all();
            $model = Nav::find($request->get('id'));
+           if(!empty($arr['picture'])){
+               $path = $this->getPath($arr['picture']);
+               if(!empty($path)){
+                   $arr['picture']=$path;
+               }else{
+                   return $this->failed('图片已失效');
+               }
+           }
             $result = $model->update($arr);
             if($result>0){
                 $res = [
@@ -73,6 +84,14 @@ class NavController extends Controller
     public function create(Request $request){
         $arr = $request->all();
 //        dump($arr);
+        if(!empty($arr['picture'])){
+            $path = $this->getPath($arr['picture']);
+            if(!empty($path)){
+                $arr['picture']=$path;
+            }else{
+                return $this->failed('图片已失效');
+            }
+        }
         $result = Nav::create($arr);
 //        dump($result);
         if(!empty($result)){
@@ -106,6 +125,20 @@ class NavController extends Controller
             ];
         }
         return $res;
+    }
+    public function getPath($key)
+    {
+        $name = Cache::store('file')->get($key);
+//        $newImg = $imageFile->move('uploads/tem_images',$newName);//移动文件
+        if(!empty($name)){
+            $storage = Storage::disk('local');
+            $storage->move('/tem_images/'.$name,'/images/'.$name);
+            $path = 'http://127.0.0.1:8081/uploads/images/'.$name;
+            return $path;
+        }else{
+            return false;
+        }
+
     }
 
 }

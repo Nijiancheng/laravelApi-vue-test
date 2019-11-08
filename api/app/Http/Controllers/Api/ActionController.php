@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+
+
 class ActionController extends Controller
 {
     public function upload(Request $request)
@@ -21,6 +24,7 @@ class ActionController extends Controller
 //        $newName = explode('/',$path)[1];
 //        $newPath = 'http://127.0.0.1:8081/'.$path;
         if(!empty($newImg)){
+            Cache::store('file')->put($fileKey,$newName,600);
             $info = [
                 "status"=> true,
                 "msg"=>"成功",
@@ -40,8 +44,8 @@ class ActionController extends Controller
         return $info;//返回文件信息
     }
 
-    public function getToken(Request $request)
-    {
-
-    }
+//    public function getToken(Request $request)
+//    {
+//
+//    }
 }

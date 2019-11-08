@@ -28,7 +28,7 @@
             </a-form-item>
             <a-form-item label="分类" v-bind="formItemLayout">
                 <a-select
-
+                        disabled
                         style="width: 100%"
                         @change="cateChange"
                         v-decorator="['category',{ rules: [{ required: true, message: '分类不可以省略选择' }], initialValue:category_id },]"
@@ -47,26 +47,27 @@
                     </quill-editor>
                 </div>
             </a-form-item>
-
             标签信息
-            <div class="tag" v-for="(v,k) in tag" >
-                <a-form-item :label="'标签'+(k+1)" v-bind="formItemLayout" >
-                    <a-select  style="width: 100%"   disabled  @change="handleSelectChange" v-model="tag[k].type">
-                        <a-select-option :value="key+1" v-for="(val,key) in tagType">{{val}}</a-select-option>
+
+
+            <div class="tag" >
+                <a-form-item :label="'标签1'" v-bind="formItemLayout" >
+                    <a-select  style="width: 100%"  disabled defaultValue="图片" >
+                        <a-select-option value="3">图片</a-select-option>
                     </a-select>
                 </a-form-item>
-                <a-form-item label="图片" v-bind="formItemLayout" v-if="tag[k].type ==3">
+                <a-form-item label="图片" v-bind="formItemLayout" >
                     <div class="clearfix">
                         <a-upload
-                                disabled
+                                :customRequest="customRequest"
                                 listType="picture-card"
                                 :fileList="fileList"
                                 @preview="imagePreview"
                                 @change="imageChange"
-                                :customRequest="customRequest"
+
                                 v-decorator="['img',{ rules: [{ required: true, message: '商品图片不可缺少' }] ,initialValue:fileList},]"
                         >
-                            <div v-if="fileList.length < 1">
+                            <div v-if="fileList.length < 5">
                                 <a-icon type="plus" />
                                 <div class="ant-upload-text">上传</div>
                             </div>
@@ -76,13 +77,22 @@
                         </a-modal>
                     </div>
                 </a-form-item>
-                <a-form-item label="保质期" v-bind="formItemLayout" v-else-if="tag[k].type ==1">
-                    <a-date-picker style="width: 100%"  disabled @change="dateChange" :format="dateFormat"   v-decorator="['date',{initialValue:moment(date,dateFormat)}]"/>
+            </div>
+            <div class="tag" v-for="(v,k) in tag" v-if="tag[k].type ==1||tag[k].type ==2">
+                <a-form-item :label="'标签'+(k+2)" v-bind="formItemLayout" >
+                    <a-select  style="width: 100%"   disabled  @change="handleSelectChange" v-model="tag[k].type">
+                        <a-select-option :value="key+1" v-for="(val,key) in tagType">{{val}}</a-select-option>
+                    </a-select>
+                </a-form-item>
+                <a-form-item label="保质期" v-bind="formItemLayout" v-if="tag[k].type ==1">
+                    <a-date-picker style="width: 100%"   @change="dateChange" :format="dateFormat"   v-decorator="['date',{rules: [{ required: true, message: '值不能为空' }],initialValue:moment(date,dateFormat)}]"/>
                 </a-form-item>
                 <a-form-item label="促销宣传语" v-bind="formItemLayout" v-else-if="tag[k].type ==2">
-                    <a-input placeholder="Basic usage"  disabled v-decorator="['slogan',{initialValue:slogan}]"/>
+                    <a-input placeholder="Basic usage"  v-decorator="['slogan',{rules: [{ required: true, message: '值不能为空' }],initialValue:slogan}]"/>
                 </a-form-item>
             </div>
+
+
             库存信息
             <a-form-item label="库存" v-bind="formItemLayout">
                 <a-table :columns="columns" :dataSource="data" bordered :pagination="false" rowKey="id">
@@ -93,20 +103,20 @@
                     >
                         <div :key="col">
                             <a-input
-                                    v-if="record.editable &&(col == 'attr1'||col=='attr2'||col=='attr3')"
+                                    v-if="record.editable && (col == 'attr1'||col=='attr2'||col=='attr3')"
                                     style="margin: -5px 0"
                                     :value="text"
-                                    @change="e => handleChange(e.target.value, record.key, col)"/>
+                                    @change="e => handleChange(e.target.value, record.id, col)"/>
                             <a-input-number
                                     v-else-if="record.editable &&(col == 'price'||col=='original_price')"
                                     style="margin: -5px 0"
                                     :min="0" :max="9999999" :step="0.01" v-model="text"
-                                    @change="e => handleChange(text, record.key, col)"/>
+                                    @change="e => handleChange(text, record.id, col)"/>
                             <a-input-number
                                     v-else-if="record.editable && (col=='sort'|| col=='quantity')"
                                     style="margin: -5px 0"
                                     :min="1" :max="10" v-model="text"
-                                    @change="e => handleChange(text, record.key, col)"/>
+                                    @change="e => handleChange(text, record.id, col)"/>
                             <template v-else>
                                 {{text}}
                             </template>
@@ -115,14 +125,15 @@
                     <template slot="operation" slot-scope="text, record, index">
                         <div class="editable-row-operations">
                             <span v-if="record.editable">
-<!--                                <a @click="() => submitSku(record.key)">立即提交</a>-->
-                                <a @click="() => save(record.key)">保存</a><br>
-                                <a @click="()=>cancel(record.key)">取消</a>
+                                <a @click="() => save(record.id)">保存</a><br>
+                                <a @click="()=>cancel(record.id)">取消</a>
                             </span>
                             <span v-else>
-                                <a @click="() => edit(record.key)">编辑</a>
-                    <!--            <a-popconfirm title="Sure to cancel?" @confirm="() => cancel(record.key)">-->
-                    <!--            </a-popconfirm>-->
+                                <a @click="() => edit(record.id)">编辑</a><br>
+                                <a @click="() => cut(record.id)">统一删除</a><br>
+                                <a-popconfirm title="是否删除该条?" @confirm="() => del(record.id)">
+                                    <a>立即删除</a>
+                                </a-popconfirm>
                             </span>
                         </div>
                     </template>
@@ -145,6 +156,7 @@
                 >
                     <div :key="col">
                         <a-input
+                                v-decorator="['${col}${index}', { rules: [{ required: true, message: '不能为空' }] }]"
                                 v-if="record.editable &&(col == 'attr1'||col=='attr2'||col=='attr3')"
                                 style="margin: -5px 0"
                                 :value="text"
@@ -198,29 +210,15 @@
     };
     const tagType=['保质期','促销宣传语','图片'];
     const statusList=['上架','下架'];
+    // var data =[];
+    // var cacheData=[];
     export default {
         data() {
             return {
                 id: '',
-                data: [],
-                dataSource:[{
-                    key: 1,
-                    original_price: 0,
-                    price: 0,
-                    attr1: '',
-                    attr2: '',
-                    attr3: '',
-                    quantity: 0,
-                    sort: 1,
-                }],
-                count:2,
-                previewVisible: false,
-                previewImage: '',
-                fileList: [],
-                content: '',
-                editorOption: {},
-                dateFormat:'YYYY-MM-DD',
-                columns: [
+                data:[],
+                cacheData:[],
+                columns:[
                     {
                         title: '原价',
                         dataIndex: 'original_price',
@@ -252,6 +250,15 @@
                         scopedSlots: {customRender: 'operation'},
                     },
                 ],
+                dataSource:[],
+                cacheDataSource:[],
+                count:2,
+                previewVisible: false,
+                previewImage: '',
+                fileList: [],
+                content: '',
+                editorOption: {},
+                dateFormat:'YYYY-MM-DD',
                 column: [],
                 cate: {},
                 tag:{},
@@ -268,6 +275,7 @@
                 status:'',
                 date:null,
                 form: this.$form.createForm(this, {name: 'dynamic_rule'}),
+                imageId:-1,
             }
         },
         methods: {
@@ -275,7 +283,7 @@
             getCate() {
                 return new Promise((resolve, reject) => {
                     this.axios.get(api.CateGet).then(res => {
-                        console.log(res.data.data ,'分类信息');
+                        // console.log(res.data.data ,'分类信息');
                         if (res.data.status) {
                             res.data.data.data.forEach((val, key) => {
                                 let json = JSON.parse(val.property);
@@ -288,7 +296,7 @@
                                         }
                                 )
                             })
-                            console.log(this.cate);
+                            // console.log(this.cate);
                         }
 
                     }).catch(err => {
@@ -298,14 +306,11 @@
             },
             getProduct() {
                 this.id = this.$route.query.id;
-                console.log(this.id);
                 this.axios.get(api.ProductGet, {
                     params: {
                         'id': this.id,
                     }
                 }).then(res => {
-                    console.log(res);
-
                     if (res.data.status) {
                         let data = res.data.data[0];
                         this.product_name = data.name;
@@ -316,128 +321,127 @@
                         this.sort = data.sort;
                         this.status = Number(data.status);
                         data.tag.forEach((v,k)=>{
-                            console.log(v,'图片');
+                            // console.log(v,'图片');
                             if(v.type == 3){
-                                this.fileList['0']=  {
-                                    uid: '1',
-                                    name: 'xxx.png',
-                                    status: 'done',
-                                    url: v.value,
-                                }
+                                this.fileList.push(
+                                    {
+                                        uid: this.imageId,
+                                        id:v.id,
+                                        name: 'xxx.png',
+                                        status: 'done',
+                                        url: v.value,
+                                        fileKey:'',
+                                    }
+                                )
+                                this.imageId--;
                             }else if(v.type ==2){
                                 this.slogan = v.value;
                             }else if(v.type ==1){
                                 this.date =v.value;
                             }
                         })
-                        console.log(this.cate,'分类信息',data.category_id);
-                        this.columns.unshift(
-                            {
-                                title: this.cate[data.category_id].attr.attr1,
-                                dataIndex: 'attr1',
-                                width: '10%',
-                                scopedSlots: {customRender: 'attr1'},
-                            },
-                            {
-                                title: this.cate[data.category_id].attr.attr2 || '暂无',
-                                dataIndex: 'attr2',
-                                width: '10%',
-                                scopedSlots: {customRender: 'attr2'},
-                            },
-                            {
-                                title: this.cate[data.category_id].attr.attr3 || '暂无',
-                                dataIndex: 'attr3',
-                                width: '10%',
-                                scopedSlots: {customRender: 'attr3'},
+                        for(let k in this.cate[data.category_id].attr){
+                            if(this.cate[data.category_id].attr[k] !='' && this.cate[data.category_id].attr[k] !=null){
+                                this.columns.unshift(
+                                    {
+                                        title: this.cate[data.category_id].attr[k],
+                                        dataIndex: k,
+                                        width: '10%',
+                                        scopedSlots: {customRender: k},
+                                    },
+                                )
                             }
-                        )
-                        console.log(data.sku ,'库存信息') ;
+                        }
                         data.sku.forEach((val, key) => {
-                            this.data.push(
-                                {
-                                    id: val.id,
-                                    original_price: val.original_price,
-                                    price: val.price,
-                                    attr1: val.attr1,
-                                    attr2: val.attr2,
-                                    attr3: val.attr3,
-                                    quantity: val.quantity,
-                                    sort: val.sort,
-                                    create_at: val.create_at,
-                                    update_at: val.update_at,
-                                    status: val.status
-                                },
-                            );
+                            this.data = data.sku;
                         })
+                        this.dataSource.push({
+                            key: 1,
+                            original_price: 0,
+                            price: 0,
+                            quantity: 0,
+                            sort: 1,
+                        })
+                        this.cacheData = this.data.map(item => ({...item}));
+                        this.cacheDataSource = this.dataSource.map(item => ({...item}));
 
-                    }
+1                    }
                 }).catch(err => {
                     console.log(err);
                 })
             },
-            cateChange(value){
-                console.log(value);
-                // this.category_id = value;
-                this.columns.splice(0,3);
-                this.columns.unshift(
-                    {
-                        title: this.cate[value].attr.attr1,
-                        dataIndex: 'attr1',
-                        width: '10%',
-                        scopedSlots: {customRender: 'attr1'},
-                    },
-                    {
-                        title: this.cate[value].attr.attr2 || '暂无',
-                        dataIndex: 'attr2',
-                        width: '10%',
-                        scopedSlots: {customRender: 'attr2'},
-                    },
-                    {
-                        title: this.cate[value].attr.attr3 || '暂无',
-                        dataIndex: 'attr3',
-                        width: '10%',
-                        scopedSlots: {customRender: 'attr3'},
-                    }
-                );
-            },
+            cateChange(value){},
             handleChange(value, key, column) {
-                const newData = [...this.data];
-                const target = newData.filter(item => key === item.key)[0];
-                if (target) {
-                    target[column] = value;
-                    this.data = newData;
-                }
+                    const newData = [...this.data];
+                    const target = newData.filter(item => key === item.id)[0];
+                console.log(this.data);
+                console.log(this.cacheData);
+                    if (target) {
+                        target[column] = value;
+                        this.data = newData;
+                    }
             },
-            handleSelectChange(value) {
-                console.log(value);
-                // this.form.setFieldsValue({
-                //     note: `Hi, ${value === 'male' ? 'man' : 'lady'}!`,
-                // });
-            },
+            handleSelectChange(value) {},
             edit(key) {
+                // console.log(key);
                 const newData = [...this.data];
-                const target = newData.filter(item => key === item.key)[0];
+                const target = newData.filter(item => key === item.id)[0];
                 if (target) {
                     target.editable = true;
                     this.data = newData;
                 }
             },
+            del(key){
+                console.log(key);
+                if(this.data.length <=1){
+                    this.$message.error('库存不能为空',2);
+                }else{
+                    let data={
+                        'id':key,
+                    }
+                    this.axios.post(api.SkuDelete,qs.stringify(data)).then(res=>{
+                        console.log(res);
+                        if(res.data.status){
+                            this.$message.success('库存删除成功',2);
+                            const dataSource = [...this.data];
+                            this.data = dataSource.filter(item => item.id !== key);
+                        }else{
+                            this.$message.error(res.data.msg,2);
+                        }
+                    }).catch(err=>{
+                        console.log(err);
+                    })
+
+                }
+            },
+            cut(key){
+                console.log(key);
+                if(this.data.length <1){
+                    this.$message.error('库存不能为空');
+                }else{
+                    const dataSource = [...this.data];
+                    this.data = dataSource.filter(item => item.id !== key);
+                }
+
+            },
             save(key) {
                 const newData = [...this.data];
-                const target = newData.filter(item => key === item.key)[0];
-                if (target) {
+                const target = newData.filter(item => key === item.id)[0];
+                // console.log(target);
+                if(target){
                     delete target.editable;
                     this.data = newData;
-                    console.log(target);
+                    this.cacheData = newData.map(item => ({ ...item }));
                 }
             },
 
-
             cancel(key) {
                 const newData = [...this.data];
-                const target = newData.filter(item => key === item.key)[0];
+                const target = newData.filter(item => key === item.id)[0];
+                console.log(this.data,'data');
+                console.log(this.cacheData,'cacheData');
                 if (target) {
-                    // Object.assign(target, this.cacheData.filter(item => key === item.key)[0]);
+                    Object.assign(target, this.cacheData.filter(item => key === item.id)[0]);
                     delete target.editable;
                     this.data = newData;
                 }
@@ -464,7 +468,8 @@
                 if (target) {
                     delete target.editable;
                     this.dataSource = newData;
-                    console.log(target);
+                    this.cacheDataSource = newData.map(item => ({ ...item }));
+                    // console.log(target);
                     let data ={
                         'product_id':this.id,
                         'original_price':target.original_price,
@@ -476,7 +481,7 @@
                         'attr3':target.attr3,
                     }
                     this.axios.post(api.SkuCreate,qs.stringify(data)).then(res=>{
-                        console.log(res);
+                        // console.log(res);
                         if(res.data.status){
                             this.$message.success('库存新增成功',2);
                             this.data.push(
@@ -491,10 +496,11 @@
                 }
             },
             skuCancel(key) {
+                console.log(key);
                 const newData = [...this.dataSource];
                 const target = newData.filter(item => key === item.key)[0];
                 if (target) {
-                    // Object.assign(target, this.cacheData.filter(item => key === item.key)[0]);
+                    Object.assign(target, this.cacheDataSource.filter(item => key === item.key)[0]);
                     delete target.editable;
                     this.dataSource = newData;
                 }
@@ -527,26 +533,25 @@
                 if (target) {
                     delete target.editable;
                     this.data = newData;
-                    console.log(target);
                 }
             },
             imageCancel() {
                 this.previewVisible = false;
-            },
-            Remove() {
-                this.fileList = [];
             },
             customRequest(file) {
                 const formData = new FormData();
                 formData.append("imageFile", file.file);
                 this.toUpload(formData);
             },
+            //查看原图
             imagePreview(file) {
                 this.previewImage = file.url || file.thumbUrl;
                 this.previewVisible = true;
             },
-            imageChange({fileList}) {
+            //上传值改变
+            imageChange({fileList,file,event}) {
                 this.fileList = fileList;
+                console.log(this.fileList);
             },
             toUpload(file) {
                 let config = {
@@ -556,51 +561,61 @@
                     .post(api.Upload, file, config)
                     .then(res => {
                         if (res.data.status) {
-                            this.fileList[0].status = "done";
-                            this.fileList[0].url = res.data.data.path;
-                            this.previewImage = res.data.data.path;
+                            this.fileList.pop();
+                            this.fileList.push({
+                                'id':-1,
+                                'uid':this.imageId,
+                                'name':res.data.data.originalName,
+                                'statdus':"done",
+                                'url':res.data.data.path,
+                                'fileKey':res.data.data.fileKey,
+                            })
+                            this.imageId--;
                             this.$message.success('图片上传成功',2);
-                            console.log(res);
                         } else {
                             this.$message.error("上传失败");
                         }
                     });
             },
+            // 时间选择器变化
             dateChange(date, dateString) {
-                console.log(date, dateString);
                 this.date = dateString;
             },
-            onEditorReady(editor) { // 准备编辑器
-            },
-            onEditorBlur(value){
-                // console.log(value);
-                console.log(this.content);
-            }, // 失去焦点事件
+            onEditorReady(editor) {},// 准备编辑器
+            onEditorBlur(value){}, // 失去焦点事件
             onEditorFocus(value){}, // 获得焦点事件
             onEditorChange(value){}, // 内容改变事件
             handleSubmit(e) {
                 e.preventDefault();
                 this.form.validateFields((err, values) => {
                     if (!err) {
-                        console.log('Received values of form: ', values);
-                        console.log([...this.data]);
-                        let tag =[{
-                            'id':'',
-                            'type':'3',
-                            'value':this.previewImage,
-                        }];
-                        if(values.date != null){
+                        let tag = [];
+                        this.tag.forEach((v,k)=>{
+                            if(v.type == 1){
+                                tag.push({
+                                    'id' : v.id,
+                                    'product_id':v.product_id,
+                                    'value':this.date,
+                                    'type' : 1,
+                                });
+                            }else if(v.type == 2){
+                                tag.push({
+                                    'id' : v.id,
+                                    'product_id':v.product_id,
+                                    'value':this.slogan,
+                                    'type' : 2,
+                                });
+                            }
+                        })
+                        this.fileList.forEach((val,key)=>{
                             tag.push({
-                                'type':'1',
-                                'value':this.date,
+                                'id' : val.id,
+                                'value': val.url,
+                                'product_id': this.id,
+                                'type':3,
+                                'fileKey':val.fileKey,
                             })
-                        }
-                        if(values.slogan != ''){
-                            tag.push({
-                                'type':'2',
-                                'value':values.slogan,
-                            })
-                        }
+                        })
                         let data = {
                             'id':this.id,
                             'category_id': this.cate[values.category].id,
@@ -609,13 +624,15 @@
                             'status':values.status,
                             'sort':values.sort,
                             'sku':[...this.data],
-                            'tag':[],
+                            'tag':tag,
                         };
                         this.axios.post(api.ProductUpdate ,JSON.stringify(data)).then(res=>{
-                            console.log(res);
+                            // console.log(res);
                             if(res.data.status){
                                 this.$message.success('编辑成功',2);
                                 this.$router.go(-1);
+                            }else{
+                                this.$message.error(res.data.msg,2);
                             }
                         }).catch(err=>{
                             this.$message.error('编辑失败',2);

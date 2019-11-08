@@ -1,10 +1,14 @@
 <template>
-<a-form :form="form" >
+<a-form :form="form"  @submit="handleSubmit">
     <a-form-item label="导航标题" v-bind="formItemLayout">
-        <a-input  placeholder="请输入分类名" v-model="nav_title"/>
+        <a-input  placeholder="请输入分类名"
+                  v-decorator="['nav_title',{ rules: [{ required: true, message: '请输入分类标题' }],initialValue:data.title},]"
+        />
     </a-form-item>
     <a-form-item v-bind="formItemLayout" label="导航位置" has-feedback >
-        <a-select style="width: 100%" v-model="position_id">
+        <a-select style="width: 100%"
+                  v-decorator="['position_id',{ rules: [{ required: true, message: '请选择导航位置' }],initialValue:data.position_id},]"
+        >
             <a-select-option :value="index+1"  v-for="(posName,index) in position" :key="index">{{posName}}</a-select-option>
         </a-select>
     </a-form-item>
@@ -16,7 +20,6 @@
                 @preview="handlePreview"
                 @change="imageChange"
                 :customRequest="customRequest"
-                :remove="Remove"
         >
             <div v-if="fileList.length < 1">
                 <a-icon type="plus"/>
@@ -29,20 +32,23 @@
     </a-form-item>
     <!--链接类型-->
     <a-form-item v-bind="formItemLayout" label="链接类型" has-feedback>
-        <a-select  style="width: 100%" @change="handleProvinceChange" v-model="link_type">
+        <a-select  style="width: 100%" @change="handleProvinceChange"
+                   v-decorator="['link_type',{ rules: [{ required: true, message: '请选择链接类型' }],initialValue:data.link_type},]"
+        >
             <a-select-option  v-for="(province,index) in link_type_list" :key="province" :value="index+1"
             >{{province}}</a-select-option
             >
         </a-select>
     </a-form-item>
     <a-form-item v-bind="formItemLayout" label="链接目标" has-feedback >
-        <a-select  style="width: 100%" v-model="link_target" v-if="link[link_type]">
+        <a-select  style="width: 100%"  v-if="link[link_type]"
+                   v-decorator="['link_target',{ rules: [{ required: true, message: '请选择链接类型' }],initialValue:data.link_target},]"
+        >
             <a-select-option :value="target.id" v-for="(target,index) in link[link_type]" :key="index">{{target.name}}</a-select-option>
         </a-select>
     </a-form-item>
-
     <a-form-item :wrapper-col="{ span: 12, offset: 6 }">
-        <a-button  type="primary" @click="submitInfo">
+        <a-button type="primary" html-type="submit">
             修改
         </a-button>
     </a-form-item>
@@ -66,15 +72,12 @@
                     wrapperCol: {span: 14},
                 },
                 fileList: [],
+                link_type:'',
                 link_type_list,
                 link_target_list:[],
                 link:[],
                 position,
                 data: [],
-                nav_title:'',
-                position_id:'',
-                img_path:'',
-                link_type: '',
                 link_target: '',
             };
         },
@@ -93,11 +96,8 @@
                         console.log(res,'信息');
                         resolve(
                             this.data = res.data.data,
-                            this.nav_title = res.data.data.title,
                             this.link_type = res.data.data.link_type,
                             this.link_target = res.data.data.link_target,
-                            this.img_path = res.data.data.picture,
-                            this.position_id = res.data.data.position_id,
                             res.data.data.picture ==null?'':this.fileList['0']=  {
                                 uid: '1',
                                 name: 'xxx.png',
@@ -129,7 +129,7 @@
                     this.axios.get(api.Product).then(res => {
 // console.log(res);                        console.log(res.data.data.data,'商品');
                         resolve(this.link['2'] = res.data.data.data);
-                        console.log(this.link);
+                        // console.log(this.link);
                     }).catch(err => {
                         reject(console.log(err));
                     })
@@ -137,9 +137,6 @@
             },
             handleCancel() {
                 this.previewVisible = false;
-            },
-            Remove() {
-                this.fileList = [];
             },
             customRequest(file) {
                 const formData = new FormData();
@@ -162,12 +159,14 @@
                     .post(api.Upload, file, config)
                     .then(res => {
                         if (res.data.status) {
-                            this.fileList[0].status = "done";
-                            this.fileList[0].url = res.data.data.path;
-                            // this.fileList[0].name = res.data.data.originalName;
-                            this.previewImage = res.data.data.path;
-                            this.img_path = res.data.data.path;
-                            console.log(res);
+                            this.fileList.pop();
+                            this.fileList.push({
+                                uid:-1,
+                                status : "done",
+                                url:res.data.data.path,
+                                fileKey:res.data.data.fileKey,
+                            })
+
                         } else {
                             this.$message.error("上传失败");
                         }
@@ -179,24 +178,32 @@
                 this.link_target = 1;
                 this.link_target_list = this.link[value-1];
             },
-            submitInfo(){
-                let data={
-                    'id':this.id,
-                    'position_id':this.position_id,
-                    'title':this.nav_title,
-                    'picture':this.img_path,
-                    'link_type':this.link_type,
-                    'link_target':this.link_target
-                }
-                this.axios.post(api.NavUpdate,qs.stringify(data)).then(res=>{
-                        if(res.data.status){
-                            this.$router.go(-1);
+            handleSubmit(e) {
+                e.preventDefault();
+                this.form.validateFields((err, values) => {
+                    if (!err) {
+                        console.log('Received values of form: ', values);
+                        let data={
+                            'id':this.id,
+                            'position_id':values.position_id,
+                            'title':values.nav_title,
+                            'picture':this.fileList.length>0?this.fileList[0].fileKey:'',
+                            'link_type':values.link_type,
+                            'link_target':this.link_target
                         }
-                }).catch(err=>{
-                    console.log(err);
-                })
-
-            }
+                        this.axios.post(api.NavAdd,qs.stringify(data)).then(res=>{
+                            if(res.data.status){
+                                this.$message.success('编辑成功',2);
+                                this.$router.go(-1);
+                            }else{
+                                this.$message.error(res.data.msg,2);
+                            }
+                        }).catch(err=>{
+                            console.log(err);
+                        })
+                    }
+                });
+            },
         },
         created() {
             this.getCate()

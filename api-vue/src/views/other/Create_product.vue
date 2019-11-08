@@ -43,10 +43,9 @@
                                         @preview="imagePreview"
                                         @change="imageChange"
                                         :customRequest="customRequest"
-                                        :remove="Remove"
                                         v-decorator="['img',{ rules: [{ required: true, message: '商品图片不可缺少' }] },]"
                                 >
-                                    <div v-if="fileList.length < 1">
+                                    <div v-if="fileList.length < 5">
                                         <a-icon type="plus"/>
                                         <div class="ant-upload-text">上传</div>
                                     </div>
@@ -198,6 +197,8 @@
                 sale_num: '',
                 date: '',
                 form: this.$form.createForm(this, {name: 'dynamic_rule'}),
+                imageId:-1,
+                columnsNum:0,
             }
         },
         methods: {
@@ -216,26 +217,19 @@
                             )
                         })
                         console.log(this.cate);
-                        this.columns.unshift(
-                            {
-                                title: this.cate[0].attr.attr1 || '暂无',
-                                dataIndex: 'attr1',
-                                width: '10%',
-                                scopedSlots: {customRender: 'attr1'},
-                            },
-                            {
-                                title: this.cate[0].attr.attr2 || '暂无',
-                                dataIndex: 'attr2',
-                                width: '10%',
-                                scopedSlots: {customRender: 'attr2'},
-                            },
-                            {
-                                title: this.cate[0].attr.attr3 || '暂无',
-                                dataIndex: 'attr3',
-                                width: '10%',
-                                scopedSlots: {customRender: 'attr3'},
+                        for(let k in this.cate[0].attr){
+                            if(this.cate[0].attr[k] !='' && this.cate[0].attr[k] !=null){
+                                this.columns.unshift(
+                                    {
+                                        title: this.cate[0].attr[k],
+                                        dataIndex: k,
+                                        width: '10%',
+                                        scopedSlots: {customRender: k},
+                                    },
+                                )
+                                this.columnsNum++;
                             }
-                        )
+                        }
                     }
                 }).catch(err => {
                     console.log(err);
@@ -245,27 +239,20 @@
             cateChange(value) {
                 console.log(value);
                 // this.category_id = value;
-                this.columns.splice(0, 3);
-                this.columns.unshift(
-                    {
-                        title: this.cate[value].attr.attr1,
-                        dataIndex: 'attr1',
-                        width: '10%',
-                        scopedSlots: {customRender: 'attr1'},
-                    },
-                    {
-                        title: this.cate[value].attr.attr2 || '暂无',
-                        dataIndex: 'attr2',
-                        width: '10%',
-                        scopedSlots: {customRender: 'attr2'},
-                    },
-                    {
-                        title: this.cate[value].attr.attr3 || '暂无',
-                        dataIndex: 'attr3',
-                        width: '10%',
-                        scopedSlots: {customRender: 'attr3'},
-                    }
-                );
+                this.columns.splice(0,this.columnsNum);
+                this.columnsNum = 0;
+                for(let k in this.cate[value].attr){
+                    this.columns.unshift(
+                        {
+                            title: this.cate[value].attr[k],
+                            dataIndex: k,
+                            width: '10%',
+                            scopedSlots: {customRender: k},
+                        }
+                    );
+                    this.columnsNum ++;
+                }
+
             },
             handleChange(value, key, column) {
                 const newData = [...this.data];
@@ -304,10 +291,6 @@
             imageCancel() {
                 this.previewVisible = false;
             },
-            Remove(file) {
-                // this.fileList = [];
-                console.log(file);
-            },
             customRequest(file) {
                 const formData = new FormData();
                 formData.append("imageFile", file.file);
@@ -328,15 +311,17 @@
                     .post(api.Upload, file, config)
                     .then(res => {
                         if (res.data.status) {
-                           this.fileList.push(
-                               {
-                                   uid: '1',
-                                   name: 'xxx.png',
-                                   status: 'done',
-                                   url: res.data.data.path,
-                               },
-                           )
-                            this.previewImage = res.data.data.path,
+                            this.fileList.pop();
+                            this.fileList.push(
+                                {
+                                    'uid':this.imageId,
+                                    'name':res.data.data.originalName,
+                                    'statdus':"done",
+                                    'url':res.data.data.path,
+                                    'fileKey':res.data.data.fileKey,
+                                },
+                            )
+                            this.imageId--;
                             console.log(res);
                         } else {
                             this.$message.error("上传失败");
@@ -345,18 +330,16 @@
             },
             dateChange(date, dateString) {
                 console.log(date, dateString);
-                this.date = dateString[0] + '~' + dateString[1];
+                if(dateString == '~'){
+                    this.date == null;
+                }else{
+                    this.date = dateString[0] + '~' + dateString[1];
+                }
             },
-            onEditorReady(editor) { // 准备编辑器
-            },
-            onEditorBlur(value) {
-                console.log(value);
-                console.log(this.content);
-            }, // 失去焦点事件
-            onEditorFocus(value) {
-            }, // 获得焦点事件
-            onEditorChange(value) {
-            }, // 内容改变事件
+            onEditorReady(editor) {}, // 准备编辑器
+            onEditorBlur(value) {}, // 失去焦点事件
+            onEditorFocus(value) {}, // 获得焦点事件
+            onEditorChange(value) {}, // 内容改变事件
             handleAdd() {
                 this.data.push({
                     key: this.count,
@@ -385,10 +368,7 @@
                     if (!err) {
                         console.log('Received values of form: ', values);
                         console.log([...this.data]);
-                        let tag = [{
-                            'type': '3',
-                            'value': this.previewImage,
-                        }];
+                        let tag = [];
                         if (values.date != null) {
                             tag.push({
                                 'type': '1',
@@ -401,6 +381,12 @@
                                 'value': values.slogan,
                             })
                         }
+                        this.fileList.forEach((val,key)=>{
+                            tag.push({
+                                'type':3,
+                                'fileKey':val.fileKey,
+                            })
+                        })
                         let data = {
                             'category_id': this.cate[values.category].id,
                             'name': values.product_name,
@@ -409,9 +395,11 @@
                             'sku': [...this.data],
                             'tag': tag,
                         };
+                        console.log(data);
                         this.axios.post(api.ProductCreate, JSON.stringify(data)).then(res => {
                             console.log(res);
                             if (res.data.status) {
+                                this.$message.success('添加成功',2);
                                 this.$router.go(-1);
                             }
                         }).catch(err => {

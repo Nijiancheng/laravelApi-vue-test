@@ -1,17 +1,22 @@
 <template>
   <div id="app">
-    <div id="nav">
-      <Index></Index>
-    </div>
+      <router-view></router-view>
   </div>
 </template>
 <script>
-  import Index from './views/Index'
-
   export default {
+      data(){
+          return {
+        }
+      },
     components: {
-      Index
+    },
+    methods:{
+
+    },
+    created(){
     }
+
   }
 </script>
 <style lang="scss">

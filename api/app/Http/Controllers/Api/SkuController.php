@@ -27,24 +27,13 @@ class SkuController extends Controller
         if (!empty($info)){
             $result=Sku::create($info);
             if (!empty($result)){
-                $res = [
-                    'status'=>true,
-                    'msg'=>'成功',
-                    'data'=>$result,
-                ];
+                return $this->success($result);
             }else{
-                $res = [
-                    'status'=>false,
-                    'msg'=>'失败',
-                ];
+               return $this->failed('添加失败');
             }
         }else{
-            $res = [
-                'status'=>false,
-                'msg'=>'失败',
-            ];
+            return $this->failed('缺少参数');
         }
-        return $res;
     }
     //更创库存
     public function update(Request $request){
@@ -72,29 +61,24 @@ class SkuController extends Controller
         return $res;
     }
     //删除库存
-    public function del(Request $request){
+    public function delete(Request $request){
         $id = $request->get('id');
         $model = Sku::find($id);
         if (!empty($model)){
-            $model->status=0;
-            $result = $model->save();
-            if ($result>0){
-                $res = [
-                    'status'=>true,
-                    'msg'=>'成功',
-                ];
+            $sku = Sku::where('product_id','=',$model->product_id)->where('status','!=',0)->get();
+            if(sizeof($sku) <=1 && $sku[0]->id == $id){
+                return $this->failed('库存不能为空');
             }else{
-                $res = [
-                    'status'=>false,
-                    'msg'=>'失败',
-                ];
+                $model->status=0;
+                $result = $model->save();
+                if ($result>0){
+                    return $this->success('删除成功');
+                }else{
+                    return $this->failed('删除失败');
+                }
             }
         }else{
-            $res = [
-                'status'=>false,
-                'msg'=>'失败',
-            ];
+            return $this->failed('该库存不存在');
         }
-        return $res;
     }
 }

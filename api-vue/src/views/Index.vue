@@ -1,17 +1,15 @@
 <template>
   <a-layout id="components-layout-demo-top-side-2">
     <a-layout-header class="header">
-      <div class="logo" />
-      <a-menu
-        theme="dark"
-        mode="horizontal"
-        :defaultSelectedKeys="['2']"
-        :style="{ lineHeight: '64px' }"
-      >
-      </a-menu>
+      <div class="logo" >
+        <div v-if="name" class="userName">
+            {{name}}
+        </div>
+      </div>
+        <a-icon class="logoutIcon" v-if="name" type="logout" @click="logout" title="登出"/>
     </a-layout-header>
     <a-layout>
-      <a-layout-sider width="200" style="background: #fff">
+      <a-layout-sider width="200" style="background: #fff" v-if="name">
         <a-menu
           mode="inline"
           :defaultSelectedKeys="['1']"
@@ -55,17 +53,48 @@
         data() {
             return {
                 collapsed: false,
+                name:'',
             };
         },
+        methods:{
+            getName(){
+                this.name = localStorage.getItem('name')?localStorage.getItem('name'):false;
+            },
+            login(){
+                this.$router.push('/login');
+            },
+            logout(){
+                localStorage.clear();
+                this.$router.push('/login');
+            }
+        },
+        created(){
+          this.getName();
+        }
     };
 </script>
 
-<style>
+<style scoped lang="scss">
   #components-layout-demo-top-side-2 .logo {
     width: 120px;
     height: 31px;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.8);
     margin: 16px 28px 16px 0;
     float: left;
+      display:flex;
+      align-items: center;
+      padding: 0 5px;
+      justify-content: center;
+      font-size:18px
+
+  }
+  #components-layout-demo-top-side-2 .header{
+      display: flex;
+      justify-content: space-between;
+      align-items:center;
+      .logoutIcon{
+          color:red;
+          font-size:20px
+      }
   }
 </style>

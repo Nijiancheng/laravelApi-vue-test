@@ -5,27 +5,25 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Model\Category;
+
 class CateController extends Controller
 {
 
 //    获取分类信息
     public function get(Request $request){
+        $model = new Category();
         $perPage = $request->get('perpage')?$request->get('perpage'):0;
         $columns = ['*'];
         $pageName = 'page';
         $page = $request->get('page')?$request->get('page'):1;
-        $model = new Category();
-//        if(!empty($request->get('status'))|| $request->get('status')==0){
-//            $model->where('status',$request->get('status'));
-//        }
         $model = $model->where('status','!=','0');
+
+        if (!empty($request->get('select'))){
+            $model->where('name','like','%'+$request->get('select')+'%');
+        }
+
         $result = $model->paginate($perPage,$columns,$pageName,$page);
-        $res = [
-          'status'=>true,
-          'msg'=>"成功",
-          "data"=>$result,
-        ];
-        return $res;
+        return $this->success($result);
     }
 //    添加分类
     public function create(Request $request){
@@ -77,10 +75,12 @@ class CateController extends Controller
 //    删除分类
     public function delete(Request $request){
         $model = Category::find($request->get('id'));
+        $id = $request->get('id');
         if(!empty($model)){
             $model->status=0;
             $result = $model->save();
             if ($result > 0){
+                Product::where('category_id','=',$id)->update(['status'=>0]);
                 $info=[
                     'status'=>true,
                     'msg'=>'分类删除成功',

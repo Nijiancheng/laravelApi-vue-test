@@ -2,8 +2,15 @@
 const ip = 'http://127.0.0.1:8081/api';
 //上传图片
 const Upload = ip + '/image/upload';
+//登录
+const Login = ip + '/admin/login';
+//注册
+const Reg = ip + '/admin/register';
+
 // 添加库存
 const SkuCreate = ip + '/sku/create';
+// 删除库存
+const SkuDelete = ip + '/sku/delete';
 //获取商品主信息
 const Product = ip + '/product/index';
 // 获取商品信息
@@ -49,5 +56,8 @@ export default {
   NavUpdate,
   NavDel,
 
-    SkuCreate
+  SkuCreate,
+  SkuDelete,
+  Reg,
+  Login
 }
