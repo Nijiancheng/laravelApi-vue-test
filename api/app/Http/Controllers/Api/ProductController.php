@@ -51,20 +51,17 @@ class ProductController extends Controller
     public function del(Request $request)
     {
         $model = Product::find($request->get('id'));
-        $model->status = '0';
-        $result = $model->save;
-        if (!empty($result)) {
-            $res = [
-                status => true,
-                data => '商品删除成功',
-            ];
-        } else {
-            $res = [
-                status => false,
-                data => '商品删除失败'
-            ];
+        if (empty($model)){
+            return $this->failed('商品不存在');
         }
-        return $res;
+        $model->status = 0;
+        $result = $model->save();
+        if (!empty($result)) {
+           return $this->success('商品删除成功');
+        } else {
+           return $this->failed('商品删除失败');
+        }
+
     }
 
     public function create(Request $request)
