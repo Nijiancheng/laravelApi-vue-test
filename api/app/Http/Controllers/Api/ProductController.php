@@ -21,12 +21,11 @@ class ProductController extends Controller
         $columns = ['*'];
         $pageName = 'page';
         $page = $request->get('page') ? $request->get('page') : 1;
-        $product = Product::where('status', '!=', '0')->orderBy('id', $order)->paginate($perPage, $columns, $pageName, $page);
-        if (!empty($product)) {
-            return $this->success($product);
-        } else {
+        $product = Product::where('status', '!=', Product::STATUS_NO)->orderBy('id', $order)->paginate($perPage, $columns, $pageName, $page);
+        if (empty($product)) {
             return $this->failed('商品获取失败');
         }
+        return $this->success($product);
     }
 
     public function get(Request $request)
@@ -35,31 +34,29 @@ class ProductController extends Controller
         if (!empty($request->get('id'))) {
             $model = $model->where('id', '=', $request->get('id'));
         }
-        $product = $model->where('status', '!=', '0')->with(['tag' => function ($query) {
-            $query->where('status', '!=', '0');
+        $product = $model->where('status', '!=', Product::STATUS_NO)->with(['tag' => function ($query) {
+            $query->where('status', '!=', Product::STATUS_NO);
         }, 'sku' => function ($query) {
-            $query->where('status', '!=', '0');
+            $query->where('status', '!=', Product::STATUS_NO);
         }])->orderBy('id', 'DESC')->get();
-        $res = [
-            'status' => true,
-            'mas' => '成功',
-            'data' => $product,
-        ];
-        return $res;
+        if (empty($product)) {
+            return $this->failed('获取商品数据失败');
+        }
+        return $this->success($product);
     }
 
     public function del(Request $request)
     {
         $model = Product::find($request->get('id'));
-        if (empty($model)){
+        if (empty($model)) {
             return $this->failed('商品不存在');
         }
-        $model->status = 0;
+        $model->status = Product::STATUS_NO;
         $result = $model->save();
         if (!empty($result)) {
-           return $this->success('商品删除成功');
+            return $this->success('商品删除成功');
         } else {
-           return $this->failed('商品删除失败');
+            return $this->failed('商品删除失败');
         }
 
     }
@@ -67,16 +64,16 @@ class ProductController extends Controller
     public function create(Request $request)
     {
         $product = json_decode($request->getContent(), true);
-        if(empty($product['category_id'])){
+        if (empty($product['category_id'])) {
             return $this->failed('分类id不能为空');
         }
-        if(empty($product['name'])){
+        if (empty($product['name'])) {
             return $this->failed('分类名称不能为空');
         }
-        if(empty($product['sort'])){
+        if (empty($product['sort'])) {
             return $this->failed('分类id不能为空');
         }
-        if(empty($product['sku'])){
+        if (empty($product['sku'])) {
             return $this->failed('库存不能为空');
         }
         //开启事务
@@ -87,8 +84,8 @@ class ProductController extends Controller
                 [
                     'category_id' => $product['category_id'],
                     'name' => $product['name'],
-                    'content' => !empty($product['content'])?$product['content']:'',
-                    'sort' => !empty($product['sort'])?$product['sort']:1,
+                    'content' => !empty($product['content']) ? $product['content'] : '',
+                    'sort' => !empty($product['sort']) ? $product['sort'] : 1,
                 ]
             );
             if (!$productModel) {
@@ -96,23 +93,23 @@ class ProductController extends Controller
             }
             //新增库存
             foreach ($product['sku'] as $v) {
-                if(empty($v['price'])){
+                if (empty($v['price'])) {
                     throw new Exception("库存售价不能为空", false);
                 }
-                if(empty($v['price'])){
+                if (empty($v['price'])) {
                     throw new Exception("库存售价不能为空", false);
                 }
-                if(empty($v['quantity']) || $v['quantity']<0){
+                if (empty($v['quantity']) || $v['quantity'] < 0) {
                     throw new Exception("库存数不能小于0", false);
                 }
                 $sku = Sku::create(
                     [
                         'product_id' => $productModel->id,
-                        'original_price' => !empty($v['original_price'])?$v['original_price']:'',
+                        'original_price' => !empty($v['original_price']) ? $v['original_price'] : '',
                         'price' => $v['price'],
-                        'attr1' => !empty($v['attr1'])?$v['attr1']:'',
-                        'attr2' => !empty($v['attr2'])?$v['attr2']:'',
-                        'attr3' => !empty($v['attr3'])?$v['attr3']:'',
+                        'attr1' => !empty($v['attr1']) ? $v['attr1'] : '',
+                        'attr2' => !empty($v['attr2']) ? $v['attr2'] : '',
+                        'attr3' => !empty($v['attr3']) ? $v['attr3'] : '',
                         'quantity' => $v['quantity'],
                         'sort' => $v['sort']
                     ]
@@ -123,14 +120,14 @@ class ProductController extends Controller
             }
             //新增标签
             foreach ($product['tag'] as $val) {
-                if(empty($v['type'])){
+                if (empty($v['type'])) {
                     throw new Exception("标签类型不能为空", false);
                 }
-                if ($val['type'] == 3) {
+                if ($val['type'] == ProductTag::TYPE_THIRD) {
                     $path = $this->getPath($val['fileKey']);
-                    if($path){
+                    if ($path) {
                         $val['value'] = $path;
-                    }else{
+                    } else {
                         throw new Exception("图片地址已失效", false);
                     }
                 }
@@ -146,10 +143,7 @@ class ProductController extends Controller
                 }
             }
             DB::commit();
-            return [
-                'status' => true,
-                'data' => 1
-            ];
+            return $this->success('新增成功');
         } catch (Exception $e) {
             //接收异常处理并回滚
             DB::rollBack();
@@ -163,33 +157,33 @@ class ProductController extends Controller
     public function update(Request $request)
     {
         $product = json_decode($request->getContent(), true);
-        if(empty($product['id'])){
+        if (empty($product['id'])) {
             return $this->failed('商品id不能为空');
+        }
+        //修改商品
+        $model1 = Product::find($product['id']);
+        if (empty($model1)) {
+            return $this->failed('该商品id不存在');
+        }
+        $data = [];
+        if (!empty($product['category_id'])) {
+            $data['category_id'] = $product['category_id'];
+        }
+        if (!empty($product['name'])) {
+            $data['name'] = $product['name'];
+        }
+        if (!empty($product['content']) || $product['content'] == '') {
+            $data['content'] = $product['content'];
+        }
+        if (!empty($product['sort'])) {
+            $data['sort'] = $product['sort'];
+        }
+        if (!empty($product['status']) || $product['status'] == Product::STATUS_NO) {
+            $data['status'] = $product['status'];
         }
         //开启事务
         DB::beginTransaction();
         try {
-            //修改商品
-            $model1 = Product::find($product['id']);
-            if(empty($model1)){
-                return $this->failed('该商品id不存在');
-            }
-            $data =[];
-            if(!empty($product['category_id'])){
-                $data[ 'category_id'] = $product['category_id'];
-            }
-            if(!empty($product['name'])){
-                $data[ 'name'] = $product['name'];
-            }
-            if(!empty($product['content'])||$product['content']==''){
-                $data[ 'content'] = $product['content'];
-            }
-            if(!empty($product['sort'])){
-                $data[ 'sort'] = $product['sort'];
-            }
-            if(!empty($product['status'])||$product['status']==0){
-                $data[ 'status'] = $product['status'];
-            }
             $productModel = $model1->update($data);
             if (!$productModel) {
                 throw new Exception("新增失败", false);
@@ -198,71 +192,71 @@ class ProductController extends Controller
             if (sizeof($product['sku']) < 1) {
                 throw new Exception("库存不能空", false);
             }
-            Sku::where('product_id', '=', $product['id'])->update(['status' => 0]);
+            Sku::where('product_id', '=', $product['id'])->update(['status' => Sku::STATUS_NO]);
             foreach ($product['sku'] as $v) {
-                $skuData =[];
+                $skuData = [];
                 if (!empty($v["id"])) {
                     $model2 = Sku::find($v["id"]);
-                    if(empty($model2)){
+                    if (empty($model2)) {
                         throw new Exception("库存不存在", false);
                     }
-                    if(!empty($v['category_id'])){
-                        if ($v['category_id']>0){
-                            $skuData[ 'category_id'] = $v['category_id'];
-                        }else{
+                    if (!empty($v['category_id'])) {
+                        if ($v['category_id'] > 0) {
+                            $skuData['category_id'] = $v['category_id'];
+                        } else {
                             throw new Exception("分类id不存在", false);
                         }
                     }
-                    if(!empty($v['price'])){
-                        if ($v['price']>0){
-                            $skuData[ 'price'] = $v['price'];
-                        }else{
+                    if (!empty($v['price'])) {
+                        if ($v['price'] > 0) {
+                            $skuData['price'] = $v['price'];
+                        } else {
                             throw new Exception("售价不能小于0", false);
                         }
                     }
-                    if(!empty($v['attr1'])){
-                            $skuData[ 'attr1'] = $v['attr1'];
+                    if (!empty($v['attr1'])) {
+                        $skuData['attr1'] = $v['attr1'];
                     }
-                    if(!empty($v['attr2'])){
-                        $skuData[ 'attr2'] = $v['attr2'];
+                    if (!empty($v['attr2'])) {
+                        $skuData['attr2'] = $v['attr2'];
                     }
-                    if(!empty($v['attr3'])){
-                        $skuData[ 'attr3'] = $v['attr3'];
+                    if (!empty($v['attr3'])) {
+                        $skuData['attr3'] = $v['attr3'];
                     }
-                    if(!empty($v['quantity'])){
-                        if ($v['quantity']>0){
-                            $skuData[ 'quantity'] = $v['quantity'];
-                        }else{
+                    if (!empty($v['quantity'])) {
+                        if ($v['quantity'] > 0) {
+                            $skuData['quantity'] = $v['quantity'];
+                        } else {
                             throw new Exception("库存不能小于0", false);
                         }
                     }
-                    if(!empty($v['sort'])){
-                        if ($v['sort']>0){
-                            $skuData[ 'sort'] = $v['sort'];
-                        }else{
+                    if (!empty($v['sort'])) {
+                        if ($v['sort'] > 0) {
+                            $skuData['sort'] = $v['sort'];
+                        } else {
                             throw new Exception("排序值不能小于0", false);
                         }
                     }
-                    $skuData[ 'status'] = 1;
+                    $skuData['status'] = Sku::STATUS_YES;
                     $sku = $model2->update($skuData);
                 } else {
-                    if(empty($v['price'])){
+                    if (empty($v['price'])) {
                         throw new Exception("库存售价不能为空", false);
                     }
-                    if(empty($v['price'])){
+                    if (empty($v['price'])) {
                         throw new Exception("库存售价不能为空", false);
                     }
-                    if(empty($v['quantity']) || $v['quantity']<0){
+                    if (empty($v['quantity']) || $v['quantity'] < 0) {
                         throw new Exception("库存数不能小于0", false);
                     }
                     $sku = Sku::create(
                         [
                             'product_id' => $productModel->id,
-                            'original_price' => !empty($v['original_price'])?$v['original_price']:'',
+                            'original_price' => !empty($v['original_price']) ? $v['original_price'] : '',
                             'price' => $v['price'],
-                            'attr1' => !empty($v['attr1'])?$v['attr1']:'',
-                            'attr2' => !empty($v['attr2'])?$v['attr2']:'',
-                            'attr3' => !empty($v['attr3'])?$v['attr3']:'',
+                            'attr1' => !empty($v['attr1']) ? $v['attr1'] : '',
+                            'attr2' => !empty($v['attr2']) ? $v['attr2'] : '',
+                            'attr3' => !empty($v['attr3']) ? $v['attr3'] : '',
                             'quantity' => $v['quantity'],
                             'sort' => $v['sort']
                         ]
@@ -277,28 +271,28 @@ class ProductController extends Controller
             }
             //修改标签
             if (!empty($product['tag'])) {
-                ProductTag::where('product_id', '=', $product['id'])->update(['status' => 0]);
+                ProductTag::where('product_id', '=', $product['id'])->update(['status' => ProductTag::STATUS_NO]);
                 foreach ($product['tag'] as $val) {
                     if ($val['id'] < 0) {
-                        if ($val['type'] == 3) {
+                        if ($val['type'] == ProductTag::TYPE_THIRD) {
                             $path = $this->getPath($val['fileKey']);
-                            if($path){
+                            if ($path) {
                                 $val['value'] = $path;
-                            }else{
+                            } else {
                                 throw new Exception("图片地址已失效", false);
                             }
                         }
-                        $tag = ProductTag::create(['product_id' => $val['product_id'], 'type' => $val['type'], 'value' => $val['value'], 'status' => 1]);
+                        $tag = ProductTag::create(['product_id' => $val['product_id'], 'type' => $val['type'], 'value' => $val['value'], 'status' => ProductTag::STATUS_YES]);
                     } else {
                         $model3 = ProductTag::find($val['id']);
-                        if($val['type'] == 3){
-                            $tag = $model3->update(['status' => 1,]
+                        if ($val['type'] == ProductTag::TYPE_THIRD) {
+                            $tag = $model3->update(['status' => ProductTag::STATUS_YES,]
                             );
-                        }else{
+                        } else {
                             $tag = $model3->update(
                                 [
                                     'value' => $val['value'],
-                                    'status' => 1,
+                                    'status' => ProductTag::STATUS_YES,
                                 ]
                             );
                         }
@@ -314,11 +308,9 @@ class ProductController extends Controller
         } catch (Exception $e) {
             //接收异常处理并回滚
             DB::rollBack();
-//            $msg=$e->getMessage();
-//            return $this->failed($e->getMessage());
             return [
-                'status'=>false,
-                'msg'=>$e->getMessage(),
+                'status' => false,
+                'msg' => $e->getMessage(),
             ];
         }
     }
@@ -327,12 +319,12 @@ class ProductController extends Controller
     {
         $name = Cache::store('file')->get($key);
 //        $newImg = $imageFile->move('uploads/tem_images',$newName);//移动文件
-        if(!empty($name)){
+        if (!empty($name)) {
             $storage = Storage::disk('local');
-            $storage->move('/tem_images/'.$name,'/images/'.$name);
-            $path = 'http://127.0.0.1:8081/uploads/images/'.$name;
+            $storage->move('/tem_images/' . $name, '/images/' . $name);
+            $path = url('/') + '/uploads/images/' . $name;
             return $path;
-        }else{
+        } else {
             return false;
         }
 

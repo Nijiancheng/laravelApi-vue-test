@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Category extends Model
 {
+    const STATUS_YES = 1;
+    const STATUS_NO = 0;
     /**
      * 与模型关联的表名
      *

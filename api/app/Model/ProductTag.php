@@ -6,6 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class ProductTag extends Model
 {
+    const STATUS_YES = 1;
+    const STATUS_NO = 0;
+    const TYPE_FIRST = 1;
+    const TYPE_SECOND =2;
+    const TYPE_THIRD =3;
     /**
      * 与模型关联的表名
      *

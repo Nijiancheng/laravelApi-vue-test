@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\Storage;
 class NavController extends Controller
 {
 //    获取导航信息
-    public function get(Request $request){
+    public function get(Request $request)
+    {
         $model = new Nav();
 ////        按状态查询
 //        if(!empty($request->get('status')||$request->get('status')==0)){
@@ -28,117 +29,107 @@ class NavController extends Controller
 //            $model=$model->where('position_id',"=",$request->get('position_id'));
 //        }
 
-        $perPage = $request->get('perpage')?$request->get('perpage'):2;
+        $perPage = $request->get('perpage') ? $request->get('perpage') : 2;//默认查询2条
         $columns = ['*'];
         $pageName = 'page';
-        $page = $request->get('page')?$request->get('page'):1;
+        $page = $request->get('page') ? $request->get('page') : 1;//查询页数 默认第1页
 
-        $model=$model->where('status',"!=",0);
-        $all = $model->paginate($perPage,$columns,$pageName,$page);
-        $res = [
-            'status'=>true,
-            'msg'=>"成功",
-            "data"=>$all,
-        ];
-        return $res;
-
+        $model = $model->where('status', "!=", Nav::STATUS_NO);
+        $all = $model->paginate($perPage, $columns, $pageName, $page);
+        if (!empty($arr)) {
+            return $this->success($all);
+        }
     }
+
 //    修改导航信息
-    public function update(Request $request){
-       if($request->isMethod('get')){
-           $res = Nav::find($request->get('id'));
-           $info=[
-               'status'=>true,
-               'msg'=>'成功',
-               "data"=>$res,
-           ];
-           return $info;
-       }elseif($request->isMethod('post')){
-           $arr = $request->all();
-           $model = Nav::find($request->get('id'));
-           if(!empty($arr['picture'])){
-               $path = $this->getPath($arr['picture']);
-               if(!empty($path)){
-                   $arr['picture']=$path;
-               }else{
-                   return $this->failed('图片已失效');
-               }
-           }
-            $result = $model->update($arr);
-            if($result>0){
-                $res = [
-                    'status'=>true,
-                    'msg'=>'修改成功'
-                ];
-            }else{
-                $res =[
-                    'status'=>false,
-                    'msg'=>'修改失败'
-                ];
+    public function update(Request $request)
+    {
+        if ($request->isMethod('get')) {
+            $res = Nav::find($request->get('id'));
+            return $this->success($res);
+        } elseif ($request->isMethod('post')) {
+            $arr = $request->all();
+            $model = Nav::find($request->get('id'));
+            if (!empty($arr['picture'])) {
+                $path = $this->getPath($arr['picture']);
+                if (!empty($path)) {
+                    $arr['picture'] = $path;
+                } else {
+                    return $this->failed('图片已失效');
+                }
             }
-            return $res;
-       }
+            $result = $model->update($arr);
+            if ($result > 0) {
+                return $this->success('修改成功');
+            } else {
+                return $this->failed('修改失败');
+            }
+        }
 
     }
+
 //    添加导航
-    public function create(Request $request){
+    public function create(Request $request)
+    {
         $arr = $request->all();
-//        dump($arr);
-        if(!empty($arr['picture'])){
+        if (empty($arr['position_id'])) {
+            return $this->failed('导航位置不能为空');
+        }
+        if (empty($arr['title']) && empty($arr['picture'])) {
+            return $this->failed('导航名或标题至少有一个');
+        }
+        if (empty($arr['link_type'])) {
+            return $this->failed('连接类型不能为空');
+        }
+        if (empty($arr['link_target'])) {
+            return $this->failed('链接目标不能为空');
+        }
+        if (!empty($arr['picture'])) {
             $path = $this->getPath($arr['picture']);
-            if(!empty($path)){
-                $arr['picture']=$path;
-            }else{
+            if (!empty($path)) {
+                $arr['picture'] = $path;
+            } else {
                 return $this->failed('图片已失效');
             }
         }
         $result = Nav::create($arr);
-//        dump($result);
-        if(!empty($result)){
-            $res=[
-                'status'=>true,
-                'msg'=>'添加成功'
-            ];
-        }else{
-            $res=[
-                'status'=>false,
-                'msg'=>'添加失败'
-            ];
+        if (!empty($result)) {
+            return $this->success('添加成功');
+        } else {
+            return $this->failed('导航添加失败');
         }
-        return $res;
     }
+
 //    删除导航
-    public function delete(Request $request){
+    public function delete(Request $request)
+    {
+        if (!empty($request->get('id'))) {
+            return $this->failed('id不能为空');
+        }
         $model = Nav::find($request->get('id'));
+        if (empty($model)) {
+            return $this->failed('导航不存在');
+        }
         $model->status = 0;
         $result = $model->save();
-
-        if($result){
-            $res =[
-                "status"=>true,
-                "msg"=>'导航删除成功',
-            ];
-        }else{
-            $res=[
-                "status"=>false,
-                "msg"=>'导航删除失败'
-            ];
+        if ($result) {
+            return $this->success('导航删除成功');
+        } else {
+            return $this->failed('导航删除失败');
         }
-        return $res;
     }
+
     public function getPath($key)
     {
         $name = Cache::store('file')->get($key);
-//        $newImg = $imageFile->move('uploads/tem_images',$newName);//移动文件
-        if(!empty($name)){
+        if (!empty($name)) {
             $storage = Storage::disk('local');
-            $storage->move('/tem_images/'.$name,'/images/'.$name);
-            $path = 'http://127.0.0.1:8081/uploads/images/'.$name;
+            $storage->move('/tem_images/' . $name, '/images/' . $name);
+            $path = url('/') + 'uploads/images/' . $name;
             return $path;
-        }else{
+        } else {
             return false;
         }
-
     }
 
 }

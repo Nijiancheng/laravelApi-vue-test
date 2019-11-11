@@ -6,6 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Nav extends Model
 {
+    const STATUS_YES = 1;
+    const STATUS_NO = 0;
+//    const POSITION_FIRST = 0,
+
+
     /**
      * 与模型关联的表名
      *

@@ -8,90 +8,97 @@ use App\Model\ProductTag;
 
 class ProductTagContorller extends Controller
 {
-    public function get(Request $request){
+    public function get(Request $request)
+    {
         $id = $request->get('id');
         $model = new ProductTag();
-        $model = $model->where('id',$id);
+        $model = $model->where('id', $id);
         $result = $model->all();
         $res = [
-            'status'=>true,
-            'msg'=>'成功',
-            'data'=>$result,
+            'status' => true,
+            'msg' => '成功',
+            'data' => $result,
         ];
         return $res;
     }
+
     //添加库存
-    public function create(Request $request){
+    public function create(Request $request)
+    {
         $info = $request->all();
-        $model=ProductTag::find($info['id']);
-        if (!empty($model)){
-            $result=$model->create($info);
-            if (!empty($result)){
+        $model = ProductTag::find($info['id']);
+        if (!empty($model)) {
+            $result = $model->create($info);
+            if (!empty($result)) {
                 $res = [
-                    'status'=>true,
-                    'msg'=>'成功',
+                    'status' => true,
+                    'msg' => '成功',
                 ];
-            }else{
+            } else {
                 $res = [
-                    'status'=>false,
-                    'msg'=>'失败',
+                    'status' => false,
+                    'msg' => '失败',
                 ];
             }
-        }else{
+        } else {
             $res = [
-                'status'=>false,
-                'msg'=>'失败',
+                'status' => false,
+                'msg' => '失败',
             ];
         }
         return $res;
     }
+
     //更创库存
-    public function update(Request $request){
+    public function update(Request $request)
+    {
         $data = $request->all();
-        $model=ProductTag::find($data['id']);
-        if (!empty($model)){
-            $result=$model->updata($data);
-            if (!empty($result)){
+        $model = ProductTag::find($data['id']);
+        if (!empty($model)) {
+            $result = $model->updata($data);
+            if (!empty($result)) {
                 $res = [
-                    'status'=>true,
-                    'msg'=>'成功',
+                    'status' => true,
+                    'msg' => '成功',
                 ];
-            }else{
+            } else {
                 $res = [
-                    'status'=>false,
-                    'msg'=>'失败',
+                    'status' => false,
+                    'msg' => '失败',
                 ];
             }
-        }else{
+        } else {
             $res = [
-                'status'=>false,
-                'msg'=>'失败',
+                'status' => false,
+                'msg' => '失败',
             ];
         }
         return $res;
     }
+
     //删除库存
-    public function del(Request $request){
+    public function del(Request $request)
+    {
         $id = $request->get('id');
         $model = ProductTag::find($id);
-        if (!empty($model)){
-            $model->status=0;
+        if (!empty($model)) {
+            $model->status = 0;
             $result = $model->save();
-            if ($result>0){
+            if ($result > 0) {
                 $res = [
-                    'status'=>true,
-                    'msg'=>'成功',
+                    'status' => true,
+                    'msg' => '成功',
                 ];
-            }else{
+            } else {
                 $res = [
-                    'status'=>false,
-                    'msg'=>'失败',
+                    'status' => false,
+                    'msg' => '失败',
                 ];
             }
-        }else{
+        } else {
             $res = [
-                'status'=>false,
-                'msg'=>'失败',
+                'status' => false,
+                'msg' => '失败',
             ];
         }
         return $res;
