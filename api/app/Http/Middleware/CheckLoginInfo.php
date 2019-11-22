@@ -16,11 +16,12 @@ class CheckLoginInfo
     public function handle($request, Closure $next)
     {
         if(empty($request->get('name'))||empty($request->get('password'))){
-            return ['status'=>false,'msg'=>'缺少参数'];
+//            return ['status'=>false,'msg'=>'缺少参数'];
+            return response()->json(['status'=>false,'msg'=>'缺少参数']);
         }else{
             $name = User::where('name','=',$request->get('name'))->first();
             if(empty($name)){
-                return ['status'=>false,'msg'=>'用户不存在'];
+                return response()->json(['status'=>false,'msg'=>'用户不存在']);
             }
         }
         return $next($request);

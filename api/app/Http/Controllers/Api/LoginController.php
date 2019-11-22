@@ -40,6 +40,9 @@ class LoginController extends Controller
                 $token = Str::random(32);
                 $validity = date('Y-m-d H-i-s',strtotime("+1 week"));
                 $result = Token::create(['token'=>$token,'user_id'=>$info->id,'validity'=>$validity]);
+
+//                $result = Token::create(['token'=>$token,'user_id'=>$info->id]);
+
                 if(empty($result)){
                     return $this->failed('登录失败');
                 }
@@ -54,6 +57,7 @@ class LoginController extends Controller
             $token = Str::random(32);
             $validity = date('Y-m-d H-i-s',strtotime("+1 week"));
             $result = Token::create(['token'=>$token,'user_id'=>$info->id,'validity'=>$validity]);
+//            $result = Token::create(['token'=>$token,'user_id'=>$info->id]);
             if(empty($result)){
                 return $this->failed('登录失败');
             }

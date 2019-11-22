@@ -53,6 +53,4 @@ Route::namespace('Api')->middleware('token')->group(function () {
 //登录注册
 Route::post('/admin/login','Api\LoginController@login')->middleware('login');
 Route::post('/admin/register','Api\LoginController@register');
-//测试
-Route::get('/getInfo','Api\TestController@getInfo');
-Route::post('/getInfo','Api\TestController@getInfo');
+

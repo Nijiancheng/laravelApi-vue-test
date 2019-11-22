@@ -18,7 +18,7 @@ class ActionController extends Controller
         $extension = $imageFile->extension();//获取文件后缀
         $newName = Str::random(15) . '.' . $extension;//拼接新名字
         $newImg = $imageFile->move('uploads/tem_images', $newName);//移动文件
-        $newPath = url('/') + '/uploads/tem_images/' . $newName;
+        $newPath = url('/') .'/uploads/tem_images/' . $newName;
         if (empty($newImg)) {
             return $this->failed('文件上传失败');
         }
@@ -30,5 +30,4 @@ class ActionController extends Controller
         ];
         return $this->success($data);
     }
-
 }

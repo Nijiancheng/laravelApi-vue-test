@@ -36,9 +36,10 @@ class NavController extends Controller
 
         $model = $model->where('status', "!=", Nav::STATUS_NO);
         $all = $model->paginate($perPage, $columns, $pageName, $page);
-        if (!empty($arr)) {
+//        dump($all);
+
             return $this->success($all);
-        }
+
     }
 
 //    修改导航信息
@@ -125,7 +126,7 @@ class NavController extends Controller
         if (!empty($name)) {
             $storage = Storage::disk('local');
             $storage->move('/tem_images/' . $name, '/images/' . $name);
-            $path = url('/') + 'uploads/images/' . $name;
+            $path = url('/') . '/uploads/images/' . $name;
             return $path;
         } else {
             return false;

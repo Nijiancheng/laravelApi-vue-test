@@ -14,8 +14,8 @@
 Route::get('/', function () {
     return view('welcome');
 });
-Route::get('/get/info',function(){
-   return json_encode("欢迎获取数据");
+Route::get('/get',function(){
+   return 'hello world';
 });
 
 //Route::get('/get/product',function(){

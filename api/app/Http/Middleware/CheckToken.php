@@ -21,6 +21,9 @@ class CheckToken
             $tokenInfo = Token::where('token','=',$token)->first();
             if(!empty($tokenInfo)){
                 $time =strtotime($tokenInfo->validity);
+
+//                $time =strtotime($tokenInfo->created_at).Token::TIME;
+
                 if($time > time()){
                     return $next($request);
                 }else{

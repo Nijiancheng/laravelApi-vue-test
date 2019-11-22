@@ -191,7 +191,7 @@
                             'link_type':values.link_type,
                             'link_target':this.link_target
                         }
-                        this.axios.post(api.NavAdd,qs.stringify(data)).then(res=>{
+                        this.axios.post(api.NavUpdate,qs.stringify(data)).then(res=>{
                             if(res.data.status){
                                 this.$message.success('编辑成功',2);
                                 this.$router.go(-1);

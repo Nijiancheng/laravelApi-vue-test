@@ -16,6 +16,7 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
+
         $order = $request->get('order') == 'ASC' ? $request->get('order') : 'DESC';
         $perPage = $request->get('perpage') ? $request->get('perpage') : 0;
         $columns = ['*'];
@@ -63,6 +64,8 @@ class ProductController extends Controller
 
     public function create(Request $request)
     {
+//        $request->only();
+//        $validator = Validator::make($input, $this->checkCreate(), $this->getMsg());
         $product = json_decode($request->getContent(), true);
         if (empty($product['category_id'])) {
             return $this->failed('分类id不能为空');
@@ -317,16 +320,36 @@ class ProductController extends Controller
 
     public function getPath($key)
     {
+
         $name = Cache::store('file')->get($key);
 //        $newImg = $imageFile->move('uploads/tem_images',$newName);//移动文件
         if (!empty($name)) {
             $storage = Storage::disk('local');
             $storage->move('/tem_images/' . $name, '/images/' . $name);
-            $path = url('/') + '/uploads/images/' . $name;
+            $path = url('/') . '/uploads/images/' . $name;
             return $path;
         } else {
             return false;
         }
-
     }
+
+//    public function checkCreate(){
+//
+//    }
+//    public function getProductMsg(){
+//        return [
+//            'product_id.required'=>'请传递商品id',
+//            'category_id.required'=>'请传递商品分类id',
+//            'name.required'=>'请传递商品名',
+//            'name.max'=>'商品名超出规定长度',
+//        ];
+//    }
+//    public function getSkuMsg(){
+//        return [
+//            'product_id.required'=>'请传递商品id',
+//            'price.required'=>'请传递商品分类id',
+//            'name.required'=>'请传递商品名',
+//            'name.max'=>'商品名超出规定长度',
+//        ];
+//    }
 }

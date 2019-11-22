@@ -19,7 +19,7 @@ class CateController extends Controller
         $model = $model->where('status', '!=', '0');
 
         if (!empty($request->get('select'))) {
-            $model->where('name', 'like', '%' + $request->get('select') + '%');
+            $model->where('name', 'like', '%' . $request->get('select') . '%');
         }
 
         $result = $model->paginate($perPage, $columns, $pageName, $page);
